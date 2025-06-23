@@ -1,112 +1,98 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Equity Research Report</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans p-6">
-  <div class="max-w-4xl mx-auto space-y-10">
-    
-    <h1 class="text-3xl font-bold text-center mb-2">Equity Research Report</h1>
-    <div class="flex justify-center items-center gap-2 mb-6">
-      <input id="tickerInput" type="text" placeholder="Enter Ticker (e.g. AAPL)" class="border px-4 py-2 rounded shadow text-sm w-60" />
-      <button onclick="handleFetch()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Generate Report</button>
+<body class="bg-gray-950 text-gray-100 min-h-screen p-6">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-4xl font-extrabold text-center text-blue-400 mb-10">Live Equity Research Report</h1>
+    <div class="mb-6 flex items-center gap-4">
+      <input id="ticker" type="text" placeholder="Enter Ticker (e.g., AAPL)" class="w-full px-4 py-3 rounded-lg text-gray-900"/>
+      <button onclick="generateReport()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg">Generate</button>
     </div>
-    <h2 class="text-xl font-semibold text-center mb-6" id="companyName">[Awaiting Ticker]</h2>
-    
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">1. Executive Summary</h2>
-      <p id="execSummary" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">2. Company Overview</h2>
-      <p id="companyOverview" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">3. Industry Overview</h2>
-      <p id="industryOverview" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">4. Financial Analysis</h2>
-      <p id="financials" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">5. Financial Projections and Valuation</h2>
-      <p id="valuation" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">6. Investment Recommendation</h2>
-      <p id="recommendation" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">7. Risks</h2>
-      <p id="risks" class="text-sm text-gray-700">Loading...</p>
-    </section>
-
-    <section>
-      <h2 class="text-xl font-semibold border-b pb-1 mb-2">8. Target Price</h2>
-      <p id="targetPrice" class="text-sm text-gray-700">Loading...</p>
-    </section>
+    <div id="report" class="space-y-8 bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-700">
+      <p class="text-gray-400 text-center">Enter a ticker and click "Generate" to see the report.</p>
+    </div>
   </div>
 
   <script>
-    async function fetchReport(ticker) {
-      const res = await fetch(`/.netlify/functions/stock?ticker=${ticker}`);
-      const data = await res.json();
+    async function generateReport() {
+      const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+      const reportDiv = document.getElementById('report');
 
-      if (!data.symbol || data.error) {
-        document.getElementById("companyName").textContent = "Invalid Ticker";
-        document.querySelectorAll("p").forEach(p => p.textContent = "Unable to load data.");
-        return;
+      if (!ticker) return;
+      reportDiv.innerHTML = '<p class="text-gray-400 text-center">Fetching data for ' + ticker + '...</p>';
+
+      try {
+        const res = await fetch(`/.netlify/functions/stock?ticker=${ticker}`);
+        const data = await res.json();
+
+        if (!data || data.error) {
+          reportDiv.innerHTML = '<p class="text-red-400">Error fetching data. Please check the ticker or try again later.</p>';
+          return;
+        }
+
+        const {
+          companyName, symbol, industry, sector, description,
+          ceo, country, exchange, ipoDate,
+          mktCap, price, beta, dcf, dcfDiff, range,
+          lastDiv, volAvg, fullTimeEmployees
+        } = data;
+
+        const format = (n) => n?.toLocaleString();
+
+        reportDiv.innerHTML = `
+          <h2 class="text-2xl font-bold text-blue-300">1. Executive Summary</h2>
+          <p>${companyName} (${symbol}) is currently trading at $${price}. Our DCF valuation suggests a fair value of $${dcf.toFixed(2)}, indicating a ${dcfDiff > 0 ? 'potential upside' : 'downside'} of $${Math.abs(dcfDiff).toFixed(2)}.</p>
+
+          <h2 class="text-2xl font-bold text-blue-300">2. Company Overview</h2>
+          <p><strong>Industry:</strong> ${industry}<br>
+          <strong>Sector:</strong> ${sector}<br>
+          <strong>Exchange:</strong> ${exchange}<br>
+          <strong>CEO:</strong> ${ceo}<br>
+          <strong>Employees:</strong> ${format(fullTimeEmployees)}<br>
+          <strong>IPO Date:</strong> ${ipoDate}</p>
+          <p class="mt-2">${description}</p>
+
+          <h2 class="text-2xl font-bold text-blue-300">3. Industry Overview</h2>
+          <p>The <strong>${industry}</strong> industry within the <strong>${sector}</strong> sector is a major contributor to global markets. Factors such as innovation, regulatory changes, and consumer demand play key roles in valuation shifts.</p>
+
+          <h2 class="text-2xl font-bold text-blue-300">4. Financial Analysis</h2>
+          <ul class="list-disc list-inside">
+            <li><strong>Price:</strong> $${price}</li>
+            <li><strong>Market Cap:</strong> $${format(mktCap)}</li>
+            <li><strong>Beta:</strong> ${beta}</li>
+            <li><strong>Volume (Avg):</strong> ${format(volAvg)}</li>
+            <li><strong>52 Week Range:</strong> ${range}</li>
+            <li><strong>Last Dividend:</strong> $${lastDiv}</li>
+          </ul>
+
+          <h2 class="text-2xl font-bold text-blue-300">5. Financial Projections and Valuation</h2>
+          <p>Our model estimates intrinsic value at $${dcf.toFixed(2)}. Current market pricing suggests a ${dcfDiff > 0 ? 'discount' : 'premium'} of $${Math.abs(dcfDiff).toFixed(2)} per share.</p>
+
+          <h2 class="text-2xl font-bold text-blue-300">6. Investment Recommendation</h2>
+          <p>Based on the valuation, ${dcfDiff > 0 ? 'we recommend considering a long position' : 'the stock appears overvalued at this time'}.</p>
+
+          <h2 class="text-2xl font-bold text-blue-300">7. Risks</h2>
+          <p>Risks include market volatility, changes in consumer demand, regulatory pressures, and management execution.</p>
+
+          <h2 class="text-2xl font-bold text-blue-300">8. Target Price</h2>
+          <p>Target Price (DCF-based): $${dcf.toFixed(2)}</p>
+        `;
+      } catch (error) {
+        console.error(error);
+        reportDiv.innerHTML = '<p class="text-red-400">Unexpected error occurred.</p>';
       }
-
-      document.getElementById("companyName").textContent = `${data.companyName} (${data.symbol})`;
-
-      document.getElementById("execSummary").textContent =
-        `${data.companyName} is a ${data.industry} firm in the ${data.sector} sector. Currently trading at $${data.price}, with a DCF valuation of $${data.dcf.toFixed(2)}, we analyze its investment potential.`;
-
-      document.getElementById("companyOverview").textContent =
-        data.description.split('. ').slice(0, 3).join('. ') + ".";
-
-      document.getElementById("industryOverview").textContent =
-        `The ${data.industry} industry remains a key segment within the ${data.sector} sector, shaped by innovation, competitive dynamics, and macroeconomic trends.`;
-
-      document.getElementById("financials").textContent =
-        `Market Cap: $${(data.mktCap / 1e12).toFixed(2)}T, Avg Volume: ${data.volAvg.toLocaleString()}, Dividend: $${data.lastDiv}, Beta: ${data.beta}, 52W Range: ${data.range}`;
-
-      const overValued = data.price > data.dcf;
-      const diff = (data.price - data.dcf).toFixed(2);
-      const pct = ((diff / data.dcf) * 100).toFixed(1);
-      document.getElementById("valuation").textContent =
-        `Based on DCF valuation, the stock appears ${overValued ? "overvalued" : "undervalued"} by approximately ${Math.abs(pct)}%.`;
-
-      document.getElementById("recommendation").textContent =
-        `We ${overValued ? "recommend caution at current levels" : "believe this is a buying opportunity"} based on valuation and market positioning.`;
-
-      document.getElementById("risks").textContent =
-        `Key risks include market volatility, sector-specific pressures, and macroeconomic headwinds.`;
-
-      document.getElementById("targetPrice").textContent =
-        `DCF-derived target price: $${data.dcf.toFixed(2)}. Current: $${data.price}`;
     }
-
-    function handleFetch() {
-  const ticker = document.getElementById('tickerInput').value.toUpperCase();
-  if (ticker) fetchReport(ticker);
-}
-
-// Optional default
-    fetchReport("AAPL");
   </script>
 </body>
 </html>
