@@ -12,7 +12,7 @@ exports.handler = async function(event) {
   }
 
   try {
-    const res = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=demo`);
+    const res = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=yBhM1Rqiw5gynqbSt2wXoyIHjpy8njJ3`);
     const data = await res.json();
 
     if (!data || data.length === 0) {
