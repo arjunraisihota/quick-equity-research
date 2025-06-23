@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quick Equity Research Tool</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans p-10">
+  <div class="max-w-3xl mx-auto text-center">
+    <h1 class="text-4xl font-bold mb-6">Quick Equity Research Tool</h1>
+    <input id="companyInput" type="text" placeholder="Enter company name or ticker" class="text-black px-4 py-2 w-full rounded mb-4" />
+    <button id="generateReportBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded">Generate Report</button>
+
+    <div id="reportOutput" class="hidden mt-10 text-left space-y-4">
+      <h2 id="reportCompanyName" class="text-2xl font-semibold"></h2>
+      <p>Ticker: <span id="companyTicker"></span></p>
+      <p>Current Price: $XXX.XX</p>
+      <p>Market Cap: $X.XX</p>
+      <p>1Y Return: 18%</p>
+      <p>P/E Ratio: 0.6x</p>
+      <p>Dividend Yield: 15%</p>
+      <p>Summary: [Company Name] remains a category leader with long-term optionality. Current valuation suggests neutral-to-cautious positioning.</p>
+    </div>
+  </div>
+
+  <script>
+    async function fetchStockData(ticker) {
+      const res = await fetch(`/.netlify/functions/stock?ticker=${ticker}`);
+      const data = await res.json();
+      const quote = data.quoteResponse.result[0];
+
+      document.getElementById('reportCompanyName').textContent = quote.shortName || ticker;
+      document.getElementById('companyTicker').textContent = ticker.toUpperCase();
+
+      const replacements = {
+        "[Company Name]": quote.shortName || ticker,
+        "$XXX.XX": `$${(quote.regularMarketPrice || 0).toFixed(2)}`,
+        "$X.XX": `$${(quote.marketCap / 1e9).toFixed(2)}B`,
+        "15%": quote.trailingAnnualDividendYield ? (quote.trailingAnnualDividendYield * 100).toFixed(1) + "%" : "—",
+        "0.6x": quote.forwardPE ? quote.forwardPE.toFixed(1) + "x" : "—",
+        "18%": quote.fiftyTwoWeekChange ? (quote.fiftyTwoWeekChange * 100).toFixed(1) + "%" : "—"
+      };
+
+      document.querySelectorAll('#reportOutput p').forEach(p => {
+        for (const [key, val] of Object.entries(replacements)) {
+          p.innerHTML = p.innerHTML.replaceAll(key, val);
+        }
+      });
+
+      document.getElementById('reportOutput').classList.remove('hidden');
+    }
+
+    document.getElementById('generateReportBtn').addEventListener('click', function() {
+      const input = document.getElementById('companyInput').value.trim();
+      if (!input) return alert("Please enter a ticker.");
+      const ticker = input.toUpperCase().split(" ")[0].replace(/[^A-Z0-9\.]/g, '').substring(0, 7);
+      fetchStockData(ticker);
+    });
+  </script>
+</body>
+</html>
