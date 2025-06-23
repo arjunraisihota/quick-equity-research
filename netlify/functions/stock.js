@@ -1,7 +1,7 @@
 
 const fetch = require('node-fetch');
 
-exports.handler = async function(event, context) {
+exports.handler = async function(event) {
   const { ticker } = event.queryStringParameters;
 
   if (!ticker) {
@@ -12,9 +12,8 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const url = `https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=demo`;
-    const response = await fetch(url);
-    const data = await response.json();
+    const res = await fetch(`https://financialmodelingprep.com/api/v3/profile/${ticker}?apikey=demo`);
+    const data = await res.json();
 
     if (!data || data.length === 0) {
       return {
@@ -30,7 +29,7 @@ exports.handler = async function(event, context) {
   } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'Error fetching data', details: error.message }),
+      body: JSON.stringify({ error: 'Fetch failed', details: error.message }),
     };
   }
 };
